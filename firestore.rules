@@ -1,0 +1,97 @@
+/**
+ * # Firestore Security Rules
+ *
+ * ## Core Philosophy
+ * This ruleset enforces a strict user-ownership model. All user-specific data is
+ * isolated within a user's own document tree, ensuring that users can only ever
+ * access their own information. The default security posture is to deny all access
+ * unless a rule explicitly grants it.
+ *
+ * ## Data Structure
+ * The data is organized hierarchically under a top-level `users` collection.
+ * Each user's data is stored in a subcollection under their unique user ID (UID):
+ * - `/users/{userId}/userMovies/{movieId}`: Stores a user's movie-watching status.
+ *
+ * ## Key Security Decisions
+ * - **No User Listing**: Listing documents in the top-level `/users` collection is
+ *   disallowed to protect user privacy and prevent enumeration attacks.
+ * - **Strict Ownership**: All operations (read, write, delete) are gated by an
+ *   ownership check, ensuring the authenticated user's UID matches the `{userId}`
+ *   in the document path.
+ * - **Denormalization for Authorization**: To ensure fast and secure authorization
+ *   checks, critical ownership data (the `userId`) is denormalized and stored
+ *   directly on each `userMovies` document. This allows rules to validate
+ *   ownership without performing slow, costly, and sometimes impossible cross-document
+ *   `get()` calls.
+ * - **Structural Segregation**: User-specific private data (`userMovies`) is stored
+ *   in a dedicated subcollection, clearly separating it from any potential future
+ *   public or shared data collections. This simplifies rule logic and enhances security.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =====================================================================
+    // Helper Functions
+    // =====================================================================
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently authenticated user's UID matches the provided userId.
+     * This is the fundamental check for data ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * A robust check for update/delete operations, ensuring the user is the
+     * owner AND the document they are trying to modify already exists.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+    
+    /**
+     * Validates that on document creation, the internal 'userId' field
+     * matches the owner's ID from the document path. This enforces relational
+     * integrity and prevents a user from creating documents attributed to others.
+     */
+    function hasValidUserMovieDataOnCreate(userId) {
+      return request.resource.data.userId == userId;
+    }
+
+    /**
+     * Ensures the 'userId' field cannot be changed after the document has been
+     * created. This prevents re-assigning ownership of a record.
+     */
+    function isUserMovieOwnerIdImmutable() {
+      return request.resource.data.userId == resource.data.userId;
+    }
+
+    // =====================================================================
+    // Collection Rules
+    // =====================================================================
+
+    /**
+     * @description Manages access to a user's private list of movie statuses.
+     * @path /users/{userId}/userMovies/{movieId}
+     * @allow A logged-in user (UID 'user123') creating a new movie status document in their own subcollection: `(create) /users/user123/userMovies/movie456`.
+     * @deny A logged-in user ('user123') trying to read the movie list of another user ('user789'): `(get) /users/user789/userMovies/movie456`.
+     * @principle Restricts access to a user's own data tree, enforcing strict data ownership and relational integrity.
+     */
+    match /users/{userId}/userMovies/{movieId} {
+      allow get: if isOwner(userId);
+      allow list: if isOwner(userId);
+      allow create: if isOwner(userId) && hasValidUserMovieDataOnCreate(userId);
+      allow update: if isExistingOwner(userId) && isUserMovieOwnerIdImmutable();
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}

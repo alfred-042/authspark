@@ -1,69 +1,77 @@
 {
   "entities": {
     "UserMovie": {
-      "$schema": "http://json-schema.org/draft-07/schema#",
       "title": "UserMovie",
       "type": "object",
       "description": "Stores the movie preferences (Want to Watch, Watching) for each user.",
       "properties": {
-        "id": {
-          "type": "string",
-          "description": "Unique identifier for the UserMovie entity."
-        },
-        "userId": {
-          "type": "string",
-          "description": "Reference to User (from Firebase Authentication). (Relationship: User 1:N UserMovie)"
-        },
         "movieId": {
           "type": "string",
-          "description": "Identifier for the movie from the external TMDB API.  This is NOT a foreign key to a local Movie entity."
+          "description": "Identifier for the movie from the external TMDB API."
         },
         "status": {
           "type": "string",
-          "description": "The status of the movie for the user: Want to Watch or Watching.",
-          "format": "string",
-          "items": {
-            "type": "string"
-          }
+          "description": "The status of the movie for the user: 'want-to-watch' or 'watching'.",
+          "enum": ["want-to-watch", "watching"]
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the movie."
+        },
+        "posterUrl": {
+            "type": "string",
+            "description": "The URL for the movie poster."
         }
       },
       "required": [
-        "id",
-        "userId",
         "movieId",
-        "status"
+        "status",
+        "title",
+        "posterUrl"
       ]
     }
   },
   "auth": {
     "providers": [
       "password",
-      "anonymous"
+      "google.com"
     ]
   },
   "firestore": {
-    "structure": [
-      {
-        "path": "/users/{userId}/userMovies/{movieId}",
-        "definition": {
-          "entityName": "UserMovie",
-          "schema": {
-            "$ref": "#/backend/entities/UserMovie"
-          },
-          "description": "Stores the movie preferences (Want to Watch, Watching) for each user. Includes denormalized 'userId' for authorization independence.",
-          "params": [
-            {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
-            },
-            {
-              "name": "movieId",
-              "description": "The ID of the movie from the TMDB API."
-            }
-          ]
-        }
-      }
-    ],
-    "reasoning": "This Firestore data structure is designed to support a movie listing website similar to Netflix, where users can mark movies as \"Want to Watch\" or \"Watching\". It prioritizes authorization independence, clarity, and security using Firebase Authentication. The structure includes a collection to store user-specific movie preferences.\n\nThe key to authorization independence is storing the `userId` within each `UserMovie` document. This allows security rules to validate ownership based solely on the document's content and the authenticated user's ID, avoiding costly and complex `get()` calls to parent documents. This approach allows atomic operations.\n\nQAPs are achieved through the following:\n\n1.  **Path-Based Ownership:** `/users/{userId}/userMovies/{movieId}` ensures that only the authenticated user can access their movie preferences. This is a standard and secure pattern for user-owned data.\n2.  **Segregation:** User-specific data is stored in a dedicated subcollection under the user's document. This ensures that data with different access control requirements (e.g., global movie metadata vs. user-specific preferences) are not mixed, simplifying security rules."
+      "collection_groups": [
+          {
+              "collection_id": "userMovies",
+              "rules": [
+                  {
+                      "allow": "get, list",
+                      "if": "request.auth != null && request.auth.uid == resource.data.userId"
+                  }
+              ]
+          }
+      ],
+      "collections": [
+          {
+              "collection_id": "users",
+              "rules": [
+                  {
+                      "allow": "read",
+                      "if": "request.auth != null && request.auth.uid == userId"
+                  }
+              ],
+              "collections": [
+                  {
+                      "collection_id": "userMovies",
+                      "document_id": "{movieId}",
+                      "schema": "UserMovie",
+                      "rules": [
+                          {
+                              "allow": "create, update, delete",
+                              "if": "request.auth != null && request.auth.uid == userId"
+                          }
+                      ]
+                  }
+              ]
+          }
+      ]
   }
 }

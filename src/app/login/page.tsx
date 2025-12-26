@@ -2,22 +2,22 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
+import { useUser } from "@/firebase";
 import LoginForm from "@/components/auth/LoginForm";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
 export default function LoginPage() {
-  const { user, loading } = useAuth();
+  const { user, isUserLoading } = useUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (!isUserLoading && user) {
       router.push("/");
     }
-  }, [user, loading, router]);
+  }, [user, isUserLoading, router]);
 
-  if (loading || user) {
+  if (isUserLoading || user) {
     return (
       <Card>
         <CardHeader>

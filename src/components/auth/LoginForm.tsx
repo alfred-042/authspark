@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { signInWithRedirect } from "firebase/auth";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -12,7 +11,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { useAuth } from "@/firebase";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,7 +31,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock } from "lucide-react";
+import { Mail, Lock, Clapperboard } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
@@ -45,6 +44,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 export default function LoginForm() {
   const router = useRouter();
+  const auth = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -88,10 +88,13 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="animate-fade-in">
-      <CardHeader className="space-y-1 text-center">
-        <CardTitle className="text-3xl font-bold text-primary font-headline">AuthSpark</CardTitle>
-        <CardDescription>Sign in to your account</CardDescription>
+    <Card className="animate-fade-in w-full max-w-md">
+      <CardHeader className="space-y-2 text-center">
+        <div className="flex justify-center items-center gap-2">
+            <Clapperboard className="h-8 w-8 text-primary" />
+            <CardTitle className="text-3xl font-bold text-primary">MovieFlix</CardTitle>
+        </div>
+        <CardDescription>Sign in to your account to continue</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <Form {...form}>

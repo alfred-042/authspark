@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Lock, Clapperboard } from "lucide-react";
+import { Clapperboard } from "lucide-react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email." }),
@@ -62,15 +62,15 @@ export default function RegisterForm() {
   }
 
   return (
-    <Card className="animate-fade-in w-full max-w-md">
-      <CardHeader className="space-y-2 text-center">
-        <div className="flex justify-center items-center gap-2">
-            <Clapperboard className="h-8 w-8 text-primary" />
-            <CardTitle className="text-3xl font-bold text-primary">MovieFlix</CardTitle>
+    <Card className="animate-fade-in w-full max-w-md bg-black/70 border-neutral-800 text-white shadow-2xl shadow-black/50">
+       <CardHeader className="space-y-4 text-center">
+        <div className="flex justify-center items-center gap-3">
+            <Clapperboard className="h-9 w-9 text-primary" />
+            <CardTitle className="text-4xl font-bold text-white tracking-tight">MovieFlix</CardTitle>
         </div>
-        <CardDescription>Create a new account</CardDescription>
+        <CardDescription className="text-neutral-400 text-lg">Create an account to start.</CardDescription>
       </CardHeader>
-      <CardContent className="grid gap-4">
+      <CardContent className="grid gap-6">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -80,10 +80,12 @@ export default function RegisterForm() {
                 <FormItem>
                   <FormLabel className="sr-only">Email</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input placeholder="Email" {...field} className="pl-10" disabled={loading} />
-                    </div>
+                    <Input 
+                      placeholder="Email address" 
+                      {...field} 
+                      className="h-12 bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500 focus:bg-neutral-700 focus:ring-primary/50" 
+                      disabled={loading} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -96,21 +98,34 @@ export default function RegisterForm() {
                 <FormItem>
                   <FormLabel className="sr-only">Password</FormLabel>
                   <FormControl>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input type="password" placeholder="Password" {...field} className="pl-10" disabled={loading} />
-                    </div>
+                    <Input 
+                      type="password" 
+                      placeholder="Password (6+ characters)" 
+                      {...field} 
+                      className="h-12 bg-neutral-800 border-neutral-700 text-white placeholder:text-neutral-500 focus:bg-neutral-700 focus:ring-primary/50" 
+                      disabled={loading} 
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full h-12 text-lg font-semibold" disabled={loading}>
               {loading ? 'Creating Account...' : 'Sign Up'}
             </Button>
           </form>
         </Form>
-        <div className="text-center text-sm text-muted-foreground">
+         <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-neutral-700" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-transparent px-2 text-neutral-400">
+              Or
+            </span>
+          </div>
+        </div>
+        <div className="text-center text-sm text-neutral-400">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-primary hover:underline">
             Sign in
